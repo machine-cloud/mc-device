@@ -1,0 +1,3 @@
+sudo ./bin/test_led &
+sudo ./bin/test_switch & 
+sudo ./bin/test_temperature &
