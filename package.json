@@ -1,0 +1,17 @@
+{
+    "name": "mc-device"
+  , "version": "0.0.1"
+  , "private": true
+  , "dependencies": {
+    , "coffee-script": "*"
+    , "socket.io-client": "*"
+    , "superagent": "*"
+    , "node-uuid" : "*"
+    , "moment" : "*"
+    , "async" : "*"
+  }
+  , "engines": {
+    "node": "0.8.x",
+    "npm":  "1.1.x"
+  }
+}
