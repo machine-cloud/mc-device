@@ -1,21 +1,27 @@
 spawn      = require("child_process").spawn
+wiringpi   = require('node-wiringpi')
 thermostat = require('./ThermoStat')
 
-five = require("johnny-five")
+RED_LED_PIN = 23
+GRN_LED_PIN = 25
+BLU_LED_PIN = 4
 
-RED_LED_PIN = 12
-GRN_LED_PIN = 13
-BLU_LED_PIN = 9
+# Set GRN_LED_PIN to 23 to make it blue
+# GRN_LED_PIN = 23
 
-# Set GRN_LED_PIN to 9 to make it blue
-# GRN_LED_PIN = 9
-
-TEMP_SENSOR_PIN = 'A0'
+MCP_CHANNEL =  0
+MCP_FREQUENCY = 100000
 TEMP_RATE = parseInt(process.env.TEMP_RATE || 3)
+TEMP_CHANNEL = 7
+
+SWITCH_PIN = 24
 
 FAIL = /fail/i
 OK   = /ok/i
 RECALL = /recall/i
+
+HIGH = wiringpi.WRITE.HIGH
+LOW  = wiringpi.WRITE.LOW
 
 exports.RealThermoStat = class RealThermoStat extends thermostat.ThermoStat
 
@@ -44,29 +50,20 @@ exports.RealThermoStat = class RealThermoStat extends thermostat.ThermoStat
     parseFloat(location.toFixed(4))
 
   process_readings: (readings) ->
-
-    # commented out because this prevents manual failures from being triggered
-    # as it recovers from them as long as the temperature is < 200
-
-    # if @temp > 200
-    #   @status = 'FAIL'
-
-    # if (FAIL.test(@last.status)) and (@temp < 200)
-    #   @status = 'OK'
-
-    if @red_led && @green_led
-      if (!FAIL.test(@last.status)) and FAIL.test(readings.status)
-        console.log('failmode')
-        #@red_led.stop().on()
-        # @green_led.stop().off()
-      if (!RECALL.test(@last.status)) and RECALL.test(readings.status)
-        console.log('recallmode')
-        #@red_led.strobe(500)
-        #@green_led.strobe(500)
-      if (!OK.test(@last.status)) and OK.test(readings.status)
-        console.log('allok')
-        #@red_led.stop().off()
-        #@green_led.stop().on()
+    if @last.switch is 0 and readings.switch is 1
+      @status = 'FAIL'
+    if (!FAIL.test(@last.status)) and FAIL.test(readings.status)
+      console.log('failmode')
+      wiringpi.digital_write(RED_LED_PIN, HIGH)
+      wiringpi.digital_write(GRN_LED_PIN, LOW)
+    if (!RECALL.test(@last.status)) and RECALL.test(readings.status)
+      console.log('recallmode')
+      wiringpi.digital_write(RED_LED_PIN, HIGH)
+      wiringpi.digital_write(GRN_LED_PIN, HIGH)
+    if (!OK.test(@last.status)) and OK.test(readings.status)
+      console.log('allok')
+      wiringpi.digital_write(RED_LED_PIN, LOW)
+      wiringpi.digital_write(GRN_LED_PIN, HIGH)
     @last = readings
 
   take_readings: () ->
@@ -75,13 +72,14 @@ exports.RealThermoStat = class RealThermoStat extends thermostat.ThermoStat
     readings.country = @country
     readings.lat = @lat
     readings.long = @long
+    readings.switch = wiringpi.digital_read(SWITCH_PIN)
     @process_readings(readings)
     readings
 
   update: ->
-    #@green_led.off()
-    #@red_led.on()
-    #@blue_led.on()
+    wiringpi.digital_write( GRN_LED_PIN, LOW );    
+    wiringpi.digital_write( RED_LED_PIN, HIGH );    
+    wiringpi.digital_write( BLU_LED_PIN, HIGH );    
     git_pull = spawn('git', ['pull'])
     git_pull.stdout.on 'data', (data) -> console.log(data.toString())
     git_pull.stderr.on 'data', (data) -> console.log(data.toString())
@@ -90,22 +88,24 @@ exports.RealThermoStat = class RealThermoStat extends thermostat.ThermoStat
       process.exit()
 
   init_board: () ->
-    @board.on "ready", () =>
-#      @red_led = new five.Led(RED_LED_PIN)
-#      @red_led.off()
-#      @blue_led = new five.Led(BLU_LED_PIN)
-#      @blue_led.off()
-#      @green_led = new five.Led(GRN_LED_PIN)
-#      @green_led.on()
-      @temp_sensor = new five.Sensor
-        pin: TEMP_SENSOR_PIN
-        freq: TEMP_RATE * 1000
+    wiringpi.pin_mode( RED_LED_PIN, wiringpi.PIN_MODE.OUTPUT )
+    wiringpi.pin_mode( BLU_LED_PIN, wiringpi.PIN_MODE.OUTPUT )
+    wiringpi.pin_mode( GRN_LED_PIN, wiringpi.PIN_MODE.OUTPUT )
+    wiringpi.digital_write( GRN_LED_PIN, LOW );    
+    wiringpi.digital_write( RED_LED_PIN, LOW );    
+    wiringpi.digital_write( BLU_LED_PIN, LOW );    
+    if(wiringpi.setup_spi(MCP_CHANNEL, MCP_FREQUENCY) == -1)
+      console.log("MCP setup error")
 
     @socket.on 'control-device', (settings) =>
-      @green_led.on()  if settings.green_led?.match(/on/i)
-      @green_led.off() if settings.green_led?.match(/off/i)
-      @red_led.on()  if settings.red_led?.match(/on/i)
-      @red_led.off() if settings.red_led?.match(/off/i)
+      if settings.green_led?.match(/on/i)
+        wiringpi.digital_write( GRN_LED_PIN, HIGH );    
+      if settings.green_led?.match(/off/i)
+        wiringpi.digital_write( GRN_LED_PIN, LOW );    
+      if settings.red_led?.match(/on/i)
+        wiringpi.digital_write( RED_LED_PIN, HIGH );    
+      if settings.red_led?.match(/off/i)
+        wiringpi.digital_write( RED_LED_PIN, LOW );    
 
   # start the timers
   start: () ->
@@ -122,9 +122,8 @@ exports.RealThermoStat = class RealThermoStat extends thermostat.ThermoStat
   start_sample: () ->
     # default: (2hrs/36readings)*(sec/hr)*(millis/sec)
     sample = () =>
-      if @temp_sensor
-        @temp = @temp_sensor.value * 0.004882814;
-        @temp = parseFloat(((@temp - 0.5) * 100).toFixed(2))
+      mcp_value = wiringpi.mcp_read_channel(MCP_CHANNEL, TEMP_CHANNEL)
+      @temp     = ((((mcp_value * ( 3300.0 / 1023.0 )) - 100) / 10.0) - 40.0)
     @real_sample = setInterval(sample, TEMP_RATE * 1000)
 
 (new exports.RealThermoStat).start()
