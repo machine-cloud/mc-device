@@ -8,4 +8,4 @@ Temp Sensor
 MCP:
 
 Fail Button
-GPIO #X: on/off
+GPIO #24: on/off
