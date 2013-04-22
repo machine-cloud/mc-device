@@ -5,7 +5,9 @@ GPIO #25: G
 GPIO #4:  B
 
 Temp Sensor
-MCP:
+MCP_CHANNEL =  0
+MCP_FREQUENCY = 100000
+TEMP_CHANNEL = 7
 
 Fail Button
 GPIO #24: on/off
