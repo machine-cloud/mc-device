@@ -1,5 +1,8 @@
 all: test_led test_switch test_temperature
 
+install:
+	sudo cp mc-device.conf /etc/init/mc-device.conf
+
 test_led: src/test_led.c
 	gcc -lwiringPi -o bin/$@ $<
 
