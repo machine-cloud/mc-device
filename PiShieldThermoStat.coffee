@@ -85,6 +85,8 @@ exports.RealThermoStat = class RealThermoStat extends thermostat.ThermoStat
     git_pull.stderr.on 'data', (data) -> console.log(data.toString())
     git_pull.on 'close', (code) =>
       console.log "git exit with #{code}"
+      wiringpi.digital_write( RED_LED_PIN, LOW );    
+      wiringpi.digital_write( BLU_LED_PIN, LOW );    
       process.exit()
 
   init_board: () ->
