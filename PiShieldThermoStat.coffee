@@ -1,6 +1,7 @@
 spawn      = require("child_process").spawn
 wiringpi   = require('node-wiringpi')
 thermostat = require('./ThermoStat')
+os         = require('os')
 
 RED_LED_PIN = 23
 GRN_LED_PIN = 25
@@ -26,7 +27,7 @@ LOW  = wiringpi.WRITE.LOW
 exports.RealThermoStat = class RealThermoStat extends thermostat.ThermoStat
 
   constructor: () ->
-    super("raspi.#{process.env.DEVICE_NUMBER}")
+    super("raspi.#{os.hostname()}")
     @city = 'San Francisco'
     @country = 'USA'
     @lat  = @jitter_location(37.774929)
