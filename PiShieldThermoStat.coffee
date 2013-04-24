@@ -26,7 +26,7 @@ LOW  = wiringpi.WRITE.LOW
 exports.RealThermoStat = class RealThermoStat extends thermostat.ThermoStat
 
   constructor: () ->
-    super('raspi')
+    super("raspi#{process.env.DEVICE_NUMBER}")
     @city = 'San Francisco'
     @country = 'USA'
     @lat  = @jitter_location(37.774929)
