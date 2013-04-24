@@ -7,7 +7,7 @@ GRN_LED_PIN = 25
 BLU_LED_PIN = 4
 
 # Set GRN_LED_PIN to 4 to make it blue
-GRN_LED_PIN = 4
+# GRN_LED_PIN = 4
 
 MCP_CHANNEL =  0
 MCP_FREQUENCY = 100000
