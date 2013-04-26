@@ -51,8 +51,8 @@ exports.RealThermoStat = class RealThermoStat extends thermostat.ThermoStat
     parseFloat(location.toFixed(4))
 
   process_readings: (readings) ->
-    if @last.switch is 0 and readings.switch is 1
-      @status = 'FAIL'
+    # if @last.switch is 0 and readings.switch is 1
+      # @status = 'FAIL'
     if (!FAIL.test(@last.status)) and FAIL.test(readings.status)
       console.log('failmode')
       wiringpi.digital_write(RED_LED_PIN, HIGH)
